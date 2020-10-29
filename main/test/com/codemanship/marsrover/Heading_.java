@@ -39,11 +39,4 @@ public class Heading_ {
 		assertEquals(East, South.turnLeft());
 		assertEquals(South, West.turnLeft());
 	}
-	@Test
-	public void should_be_able_turn_around() {
-		assertEquals(South, North.turnAround());
-		assertEquals(West, East.turnAround());
-		assertEquals(North, South.turnAround());
-		assertEquals(East, West.turnAround());
-	}
 }

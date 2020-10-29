@@ -1,11 +1,47 @@
 package refactoring;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
+
 public class Rover {
+	private Heading heading;
+	private Position position;
 
 	public Rover(String facing, int x, int y) {
+		this(Heading.of(facing),new Position(x,y));
 	}
 
 	public Rover(Heading heading, int x, int y) {
+		this(heading, new Position(x,y));
+	}
+
+	public Rover(Heading heading, Position position) {
+		this.heading = heading;
+		this.position = position;
+	}
+
+	public Heading heading() {
+		return heading;
+	}
+
+	public Position position() {
+		return this.position;
+	}
+
+	public void go(String instructions){
+		Stream<Order> orders = Arrays.stream(instructions.split(""))
+				.map(Order::of)
+				.filter(Objects::nonNull);
+		orders.forEach(order -> actions.get(order).execute());
+	}
+
+	public void go(Order... orders){
+		for (Order order : orders) {
+			actions.get(order).execute();
+		}
 	}
 
 	public static class Position {
@@ -18,24 +54,23 @@ public class Rover {
 		}
 
 		public Position forward (Heading heading) {
-			return move(heading);
-		}
-		public Position backward (Heading heading) {
-			return move(heading.turnAround());
+			return new Position(this.x+dx(heading),this.y+dy(heading));
 		}
 
-		public Position move (Heading heading){
-			switch (heading) {
-				case North:
-					return new Position(this.x, this.y + 1);
-				case South:
-					return new Position(this.x, this.y - 1);
-				case East:
-					return new Position(this.x + 1, this.y);
-				case West:
-					return new Position(this.x - 1, this.y);
-			}
-			return null;
+		public Position backward (Heading heading) {
+			return new Position(this.x-dx(heading),this.y-dy(heading));
+		}
+
+		private int dx(Heading heading) {
+			if (heading == Heading.East) return 1;
+			if (heading == Heading.West) return -1;
+			return 0;
+		}
+
+		private int dy(Heading heading) {
+			if (heading == Heading.North) return 1;
+			if (heading == Heading.South) return -1;
+			return 0;
 		}
 
 		@Override
@@ -51,6 +86,35 @@ public class Rover {
 			return object != null && object.getClass() == Position.class;
 		}
 
+		@Override
+		public String toString() {
+			return "Position{" + "x=" + x + ", y=" + y + '}';
+		}
+	}
+
+	Map<Order,Action> actions = new HashMap<>();
+	{
+		actions.put(Order.Forward, ()->position = position.forward(heading));
+		actions.put(Order.Backward, ()->position = position.backward(heading));
+		actions.put(Order.Left, ()->heading = heading.turnLeft());
+		actions.put(Order.Right, ()->heading = heading.turnRight());
+	}
+
+	public enum Order {
+		Forward, Backward, Left, Right;
+
+		public static Order of(String instruction) {
+			if (instruction.equals("F")) return Forward;
+			if (instruction.equals("B")) return Backward;
+			if (instruction.equals("L")) return Left;
+			if (instruction.equals("R")) return Right;
+			return null;
+		}
+	}
+
+	@FunctionalInterface
+	public interface Action {
+		void execute();
 	}
 
 
@@ -77,16 +141,8 @@ public class Rover {
 			return values()[add(-1)];
 		}
 
-		public Heading turnAround() {
-			return values()[add(+2)];
-		}
-
 		private int add(int offset) {
 			return (this.ordinal() + offset + values().length) % values().length;
 		}
-
 	}
-
-
 }
-
