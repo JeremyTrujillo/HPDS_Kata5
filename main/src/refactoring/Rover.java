@@ -1,26 +1,35 @@
 package refactoring;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Stream;
+
+import static java.util.Arrays.stream;
 
 public class Rover {
 	private Heading heading;
 	private Position position;
+	private static List<Obstacle> obstacles; //Map<Position,Obstacle>
+
 
 	public Rover(String facing, int x, int y) {
 		this(Heading.of(facing),new Position(x,y));
 	}
 
-	public Rover(Heading heading, int x, int y) {
-		this(heading, new Position(x,y));
-	}
+	public Rover(Heading heading, int x, int y) { this(heading, new Position(x,y)); }
 
 	public Rover(Heading heading, Position position) {
 		this.heading = heading;
 		this.position = position;
+		//obstacles = detectInitialObstacles();
+		obstacles = new ArrayList<>();
+	}
+
+	/*private List<Obstacle> detectInitialObstacles() {
+		return new ArrayList<>();
+	}*/
+
+	public void addObstacle(Obstacle obstacle) {
+		obstacles.add(obstacle);
 	}
 
 	public Heading heading() {
@@ -31,18 +40,13 @@ public class Rover {
 		return this.position;
 	}
 
-	public void go(String instructions){
-		Stream<Order> orders = Arrays.stream(instructions.split(""))
-				.map(Order::of)
-				.filter(Objects::nonNull);
-		orders.forEach(order -> actions.get(order).execute());
-	}
+	public void go(String instructions){ go(stream(instructions.split("")).map(Order::of)); }
 
-	public void go(Order... orders){
-		for (Order order : orders) {
-			actions.get(order).execute();
-		}
-	}
+	public void go(Order... orders){ go(stream(orders)); }
+
+	private void go(Stream<Order> orders){ orders.filter(Objects::nonNull).forEach(this::execute); }
+
+	private void execute (Order order){ actions.get(order).execute(); }
 
 	public static class Position {
 		private final int x;
@@ -54,12 +58,28 @@ public class Rover {
 		}
 
 		public Position forward (Heading heading) {
-			return new Position(this.x+dx(heading),this.y+dy(heading));
+			if (thereIsObstacleBefore(heading)) return this;
+			else return new Position(this.x + dx(heading), this.y + dy(heading));
 		}
 
 		public Position backward (Heading heading) {
-			return new Position(this.x-dx(heading),this.y-dy(heading));
+			if (thereIsObstacleBehind(heading)) return this;
+			else return new Position(this.x - dx(heading), this.y - dy(heading));
 		}
+
+		private boolean thereIsObstacleBefore(Heading heading) {
+			return thereIsObstacle(new Position(this.x + dx(heading), this.y + dy(heading)));
+		}
+
+		private boolean thereIsObstacleBehind(Heading heading) {
+			return thereIsObstacle(new Position(this.x - dx(heading), this.y - dy(heading)));
+		}
+
+		private boolean thereIsObstacle(Position position) {
+			return Rover.obstacles.stream().anyMatch(obstacle -> obstacle.getPosition().equals(position));
+		}
+
+
 
 		private int dx(Heading heading) {
 			if (heading == Heading.East) return 1;
