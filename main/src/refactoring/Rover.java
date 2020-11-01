@@ -8,8 +8,7 @@ import static java.util.Arrays.stream;
 public class Rover {
 	private Heading heading;
 	private Position position;
-	private static List<Obstacle> obstacles; //Map<Position,Obstacle>
-
+	private static Map<Position, Obstacle> obstacles;
 
 	public Rover(String facing, int x, int y) {
 		this(Heading.of(facing),new Position(x,y));
@@ -20,17 +19,10 @@ public class Rover {
 	public Rover(Heading heading, Position position) {
 		this.heading = heading;
 		this.position = position;
-		//obstacles = detectInitialObstacles();
-		obstacles = new ArrayList<>();
+		obstacles = new HashMap<>();
 	}
 
-	/*private List<Obstacle> detectInitialObstacles() {
-		return new ArrayList<>();
-	}*/
-
-	public void addObstacle(Obstacle obstacle) {
-		obstacles.add(obstacle);
-	}
+	public void addObstacle(Obstacle obstacle) { obstacles.put(obstacle.getPosition(),obstacle); }
 
 	public Heading heading() {
 		return heading;
@@ -59,27 +51,29 @@ public class Rover {
 
 		public Position forward (Heading heading) {
 			if (thereIsObstacleBefore(heading)) return this;
-			else return new Position(this.x + dx(heading), this.y + dy(heading));
+			else return forwardPosition(heading);
 		}
 
 		public Position backward (Heading heading) {
 			if (thereIsObstacleBehind(heading)) return this;
-			else return new Position(this.x - dx(heading), this.y - dy(heading));
+			else return backwardPosition(heading);
 		}
 
 		private boolean thereIsObstacleBefore(Heading heading) {
-			return thereIsObstacle(new Position(this.x + dx(heading), this.y + dy(heading)));
+			return thereIsObstacle(forwardPosition(heading));
 		}
 
 		private boolean thereIsObstacleBehind(Heading heading) {
-			return thereIsObstacle(new Position(this.x - dx(heading), this.y - dy(heading)));
+			return thereIsObstacle(backwardPosition(heading));
 		}
 
-		private boolean thereIsObstacle(Position position) {
-			return Rover.obstacles.stream().anyMatch(obstacle -> obstacle.getPosition().equals(position));
+		private boolean thereIsObstacle(Position position) { return Rover.obstacles.containsKey(position); }
+
+		private Position forwardPosition(Heading heading) {
+			return new Position(this.x + dx(heading), this.y + dy(heading));
 		}
 
-
+		private Position backwardPosition(Heading heading){ return new Position(this.x - dx(heading), this.y - dy(heading)); }
 
 		private int dx(Heading heading) {
 			if (heading == Heading.East) return 1;
@@ -94,22 +88,19 @@ public class Rover {
 		}
 
 		@Override
+		public String toString() { return "Position{" + "x=" + x + ", y=" + y + '}'; }
+
+		@Override
 		public boolean equals(Object object) {
 			return isSameClass(object) && equals((Position) object);
 		}
 
-		private boolean equals(Position position) {
-			return position == this || (x == position.x && y == position.y);
-		}
+		private boolean isSameClass(Object object) { return object != null && object.getClass() == Position.class; }
 
-		private boolean isSameClass(Object object) {
-			return object != null && object.getClass() == Position.class;
-		}
+		private boolean equals(Position position) { return position == this || (x == position.x && y == position.y); }
 
 		@Override
-		public String toString() {
-			return "Position{" + "x=" + x + ", y=" + y + '}';
-		}
+		public int hashCode() { return Objects.hash(x, y); }
 	}
 
 	Map<Order,Action> actions = new HashMap<>();
